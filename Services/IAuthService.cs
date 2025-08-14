@@ -8,6 +8,7 @@ namespace Chariot.Services
         Task<User?> RegisterAsync(UserDTO req);
         Task<TokenResponseDTO?> LoginAsync(UserDTO req);
         Task<TokenResponseDTO?> RefreshTokenAsync(RefreshTokenRequestDTO req);
-        Task<TokenResponseDTO?> LoginGuestAsync(GuestDTO req);
+        Task<TokenResponseDTO?> LoginGuestAsync(string guestName);
+        Task<User?> FetchUserInfoAsync(int userId);
     }
 }

@@ -25,6 +25,10 @@ namespace Chariot.Data
                 .HasOne(t => t.Chatroom)
                 .WithMany(c => c.ChatroomUsers)
                 .HasForeignKey(t => t.ChatroomId);
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
         }
     }
 }

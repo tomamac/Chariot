@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Chariot.Services
 {
-    public class AuthService(ChariotDbContext context, IConfiguration configuration) : IAuthService
+    public class AuthService(ChariotDbContext context, IConfiguration configuration, IPasswordHasher<User> hasher) : IAuthService
     {
         public async Task<TokenResponseDTO?> LoginAsync(UserDTO req)
         {
@@ -21,7 +21,7 @@ namespace Chariot.Services
                 return null;
             }
 
-            if (new PasswordHasher<User>().VerifyHashedPassword(user, user.HashedPassword!, req.Password)
+            if (hasher.VerifyHashedPassword(user, user.HashedPassword!, req.Password)
                 == PasswordVerificationResult.Failed)
             {
                 return null;
@@ -35,7 +35,7 @@ namespace Chariot.Services
             return new TokenResponseDTO
             {
                 AccessToken = CreateToken(user),
-                RefreshToken = user.Role == "Guest" ? user.Role : await GenerateAndSaveRefreshTokenAsync(user)
+                RefreshToken = user.Role == "Guest" ? null : await GenerateAndSaveRefreshTokenAsync(user)
             };
         }
 
@@ -52,6 +52,7 @@ namespace Chariot.Services
         {
             var randomNum = new byte[32];
             using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNum);
             return Convert.ToBase64String(randomNum);
         }
 
@@ -60,7 +61,8 @@ namespace Chariot.Services
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim("username", user.Username),
+                new Claim(ClaimTypes.Name, user.DisplayName),
                 new Claim(ClaimTypes.Role, user.Role),
             };
 
@@ -82,9 +84,24 @@ namespace Chariot.Services
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
 
-        public Task<TokenResponseDTO?> LoginGuestAsync(GuestDTO req)
+        public async Task<TokenResponseDTO?> LoginGuestAsync(string guestName)
         {
-            throw new NotImplementedException();
+
+            var user = new User();
+
+            user.Username = $"guest_{Guid.NewGuid().ToString("N").Substring(0,8)}";
+            user.DisplayName = guestName;
+            user.Role = "Guest";
+
+            while(await context.Users.AnyAsync(u => u.Username == user.Username))
+            {
+                user.Username = $"guest_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            }
+
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            return await CreateTokenResponse(user);
         }
 
         public async Task<TokenResponseDTO?> RefreshTokenAsync(RefreshTokenRequestDTO req)
@@ -114,15 +131,24 @@ namespace Chariot.Services
             }
 
             var user = new User();
-            var hashedPassword = new PasswordHasher<User>()
+            var hashedPassword = hasher
                 .HashPassword(user, req.Password);
 
             user.Username = req.Username;
             user.HashedPassword = hashedPassword;
+            user.DisplayName = req.Username;
+            user.Role = "User";
 
             context.Users.Add(user);
             await context.SaveChangesAsync();
 
+            return user;
+        }
+
+        public async Task<User?> FetchUserInfoAsync(int userId)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user is null) return null;
             return user;
         }
     }
