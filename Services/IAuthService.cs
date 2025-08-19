@@ -5,10 +5,10 @@ namespace Chariot.Services
 {
     public interface IAuthService
     {
-        Task<User?> RegisterAsync(UserDTO req);
-        Task<TokenResponseDTO?> LoginAsync(UserDTO req);
+        Task<User?> RegisterAsync(UserAuthDTO req);
+        Task<TokenResponseDTO?> LoginAsync(UserAuthDTO req);
         Task<TokenResponseDTO?> RefreshTokenAsync(RefreshTokenRequestDTO req);
         Task<TokenResponseDTO?> LoginGuestAsync(string guestName);
-        Task<User?> FetchUserInfoAsync(int userId);
+        Task<UserInfoDTO?> FetchUserInfoAsync(int userId);
     }
 }

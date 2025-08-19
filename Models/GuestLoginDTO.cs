@@ -1,6 +1,6 @@
 ﻿namespace Chariot.Models
 {
-    public class GuestDTO
+    public class GuestLoginDTO
     {
         public string Name { get; set; } = string.Empty;
     }

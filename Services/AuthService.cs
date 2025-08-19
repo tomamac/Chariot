@@ -13,7 +13,7 @@ namespace Chariot.Services
 {
     public class AuthService(ChariotDbContext context, IConfiguration configuration, IPasswordHasher<User> hasher) : IAuthService
     {
-        public async Task<TokenResponseDTO?> LoginAsync(UserDTO req)
+        public async Task<TokenResponseDTO?> LoginAsync(UserAuthDTO req)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Username == req.Username);
             if (user is null)
@@ -89,11 +89,12 @@ namespace Chariot.Services
 
             var user = new User();
 
-            user.Username = $"guest_{Guid.NewGuid().ToString("N").Substring(0,8)}";
+            user.Username = $"guest_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
             user.DisplayName = guestName;
             user.Role = "Guest";
+            user.CreatedAt = DateTime.UtcNow;
 
-            while(await context.Users.AnyAsync(u => u.Username == user.Username))
+            while (await context.Users.AnyAsync(u => u.Username == user.Username))
             {
                 user.Username = $"guest_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
             }
@@ -123,7 +124,7 @@ namespace Chariot.Services
             return user;
         }
 
-        public async Task<User?> RegisterAsync(UserDTO req)
+        public async Task<User?> RegisterAsync(UserAuthDTO req)
         {
             if (await context.Users.AnyAsync(u => u.Username == req.Username))
             {
@@ -138,6 +139,7 @@ namespace Chariot.Services
             user.HashedPassword = hashedPassword;
             user.DisplayName = req.Username;
             user.Role = "User";
+            user.CreatedAt = DateTime.UtcNow;
 
             context.Users.Add(user);
             await context.SaveChangesAsync();
@@ -145,11 +147,26 @@ namespace Chariot.Services
             return user;
         }
 
-        public async Task<User?> FetchUserInfoAsync(int userId)
+        public async Task<User?> AdminSeedAsync()
+        {
+            var admin = new User();
+            admin.Username = configuration["ADMIN_USER"]!;
+            admin.HashedPassword = hasher.HashPassword(admin, configuration["ADMIN_PASS"]!);
+            admin.DisplayName = "Tomamac";
+            admin.Role = "Admin";
+            admin.CreatedAt = DateTime.UtcNow;
+
+            context.Users.Add(admin);
+            await context.SaveChangesAsync();
+
+            return admin;
+        }
+
+        public async Task<UserInfoDTO?> FetchUserInfoAsync(int userId)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user is null) return null;
-            return user;
+            return new UserInfoDTO { Username = user.Username, DisplayName = user.DisplayName };
         }
     }
 }
