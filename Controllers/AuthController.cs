@@ -87,17 +87,6 @@ namespace Chariot.Controllers
             return Ok("Protected route accessed");
         }
 
-        [HttpGet("admin-seed")]
-        public async Task<ActionResult> AdminSeed(UserAuthDTO req) {
-            var res = await authService.RegisterAsync(req);
-            if (res is null)
-            {
-                return BadRequest("Admin is seeded");
-            }
-            return Ok("Seeded");
-        }
-
-
         [Authorize(Roles = "Admin")]
         [HttpGet("admin")]
         public IActionResult AdminRoute()

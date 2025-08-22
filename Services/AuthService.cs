@@ -147,21 +147,6 @@ namespace Chariot.Services
             return user;
         }
 
-        public async Task<User?> AdminSeedAsync()
-        {
-            var admin = new User();
-            admin.Username = configuration["ADMIN_USER"]!;
-            admin.HashedPassword = hasher.HashPassword(admin, configuration["ADMIN_PASS"]!);
-            admin.DisplayName = "Tomamac";
-            admin.Role = "Admin";
-            admin.CreatedAt = DateTime.UtcNow;
-
-            context.Users.Add(admin);
-            await context.SaveChangesAsync();
-
-            return admin;
-        }
-
         public async Task<UserInfoDTO?> FetchUserInfoAsync(int userId)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
