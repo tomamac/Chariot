@@ -12,5 +12,6 @@
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExp { get; set; }
         public List<ChatroomUser> ChatroomUsers { get; } = [];
+        public List<Message> Messages { get; } = [];
     }
 }

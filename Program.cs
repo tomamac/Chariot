@@ -1,5 +1,6 @@
 using Chariot.Data;
 using Chariot.Entities;
+using Chariot.Hubs;
 using Chariot.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -18,6 +19,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContextPool<ChariotDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration["DB_URI"])
@@ -53,5 +56,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ChatHub>("/Chat");
 
 app.Run();

@@ -7,5 +7,6 @@
         public string Code { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public List<ChatroomUser> ChatroomUsers { get; } = [];
+        public List<Message> Messages { get; } = [];
     }
 }
