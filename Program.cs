@@ -26,6 +26,7 @@ builder.Services.AddDbContextPool<ChariotDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration["DB_URI"])
 );
 
+//TODO: CORS config and JWT auth for SignalR Hub
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -41,6 +42,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 var app = builder.Build();
 

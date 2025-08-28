@@ -147,11 +147,11 @@ namespace Chariot.Services
             return user;
         }
 
-        public async Task<UserInfoDTO?> FetchUserInfoAsync(int userId)
+        public async Task<MyInfoDTO?> FetchUserInfoAsync(int userId)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user is null) return null;
-            return new UserInfoDTO { Username = user.Username, DisplayName = user.DisplayName };
+            return new MyInfoDTO { Username = user.Username, DisplayName = user.DisplayName };
         }
     }
 }
