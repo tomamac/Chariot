@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Chariot.Controllers
 {
@@ -55,7 +56,21 @@ namespace Chariot.Controllers
                 return BadRequest("Wrong credentials");
             }
 
-            return Ok(res);
+            Response.Cookies.Append("access_token", res.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            Response.Cookies.Append("refresh_token", res.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            return Ok();
         }
 
         [HttpPost("guest-login")]
@@ -67,14 +82,45 @@ namespace Chariot.Controllers
             {
                 return StatusCode(500, "Server error, please try again.");
             }
-            return Ok(res);
+
+            Response.Cookies.Append("access_token", res.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            return Ok();
         }
 
         [HttpPost("refresh-token")]
-        public async Task<ActionResult<TokenResponseDTO>> RefreshToken(RefreshTokenRequestDTO req)
+        public async Task<ActionResult<TokenResponseDTO>> RefreshToken()
         {
+            if (!(int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId) &&
+                Request.Cookies.TryGetValue("refresh_token", out var refreshToken)))
+                return BadRequest();
+
+            var req = new RefreshTokenRequestDTO
+            {
+                UserId = userId,
+                RefreshToken = refreshToken
+            };
             var res = await authService.RefreshTokenAsync(req);
             if (res is null || res.AccessToken is null || res.RefreshToken is null) return Unauthorized("Invalid refresh token");
+
+            Response.Cookies.Append("access_token", res.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            Response.Cookies.Append("refresh_token", res.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
 
             return Ok(res);
         }

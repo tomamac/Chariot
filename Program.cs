@@ -26,19 +26,49 @@ builder.Services.AddDbContextPool<ChariotDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration["DB_URI"])
 );
 
-//TODO: CORS config and JWT auth for SignalR Hub
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["ISSUER"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["AUDIENCE"],
-        ValidateLifetime = true,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT_SECRET"]!)),
-        ValidateIssuerSigningKey = true,
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["ISSUER"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["AUDIENCE"],
+            ValidateLifetime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JWT_SECRET"]!)),
+            ValidateIssuerSigningKey = true,
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.ContainsKey("access_token"))
+                {
+                    context.Token = context.Request.Cookies["access_token"];
+                }
+
+                if (string.IsNullOrEmpty(context.Token))
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken))
+                        context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(builder.Configuration["FRONTEND_URI"]!)
+              .AllowCredentials();
+    });
+});
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -56,6 +86,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseCors("AllowFrontend");
 
 app.MapControllers();
 
