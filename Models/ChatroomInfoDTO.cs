@@ -2,10 +2,9 @@
 
 namespace Chariot.Models
 {
-    public class ChatroomListDTO
+    public class ChatroomInfoDTO
     {
         public Chatroom Chatroom { get; set; } = new();
         public Message? LastMessage { get; set; }
-
     }
 }

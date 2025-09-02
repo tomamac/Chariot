@@ -1,5 +1,7 @@
-﻿using Chariot.Services;
+﻿using Chariot.Models;
+using Chariot.Services;
 using Microsoft.AspNetCore.SignalR;
+using System;
 using System.Security.Claims;
 
 namespace Chariot.Hubs
@@ -10,13 +12,13 @@ namespace Chariot.Hubs
         {
             if (int.TryParse(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int userId))
             {
-                var roomId = await chatService.CreateChatAsync(userId, roomName);
-                if (roomId is null)
+                var chatroom = await chatService.CreateChatAsync(userId, roomName);
+                if (chatroom is null)
                 {
-                    await Clients.Caller.SendAsync("Error", new { message = "Failed to create chat" });
-                    return;
+                    throw new HubException("Failed to create chat");
                 }
-                await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString()!);
+                await Groups.AddToGroupAsync(Context.ConnectionId, chatroom.Chatroom.Id.ToString()!);
+                await Clients.Caller.SendAsync("RoomCreated", chatroom);
             }
             else await Clients.Caller.SendAsync("Error", new { message = "Invalid user ID claim" });
         }
