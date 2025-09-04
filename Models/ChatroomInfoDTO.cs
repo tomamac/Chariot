@@ -4,7 +4,11 @@ namespace Chariot.Models
 {
     public class ChatroomInfoDTO
     {
-        public Chatroom Chatroom { get; set; } = new();
-        public Message? LastMessage { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string Code { get; set; } = null!;
+        public DateTime? LastActivityAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public MessageResponseDTO? LastMessage { get; set; }
     }
 }
