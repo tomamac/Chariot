@@ -1,10 +1,8 @@
-﻿using Chariot.Entities;
-using Chariot.Models;
+﻿using Chariot.Models;
 using Chariot.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Chariot.Controllers
@@ -31,7 +29,7 @@ namespace Chariot.Controllers
                 return BadRequest("Username already exists");
             }
 
-            return Ok(new { message = "Registration completed"});
+            return Ok(new { message = "Registration completed" });
         }
 
         [HttpPost("login")]
@@ -78,7 +76,7 @@ namespace Chariot.Controllers
         {
             var res = await authService.LoginGuestAsync(req.Name);
 
-            if(res is null)
+            if (res is null)
             {
                 return StatusCode(500, "Server error, please try again.");
             }
@@ -96,17 +94,17 @@ namespace Chariot.Controllers
         [HttpPost("refresh-token")]
         public async Task<ActionResult<TokenResponseDTO>> RefreshToken()
         {
-            if (!(int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId) &&
+            if (!(Request.Cookies.TryGetValue("access_token", out var accessToken) &&
                 Request.Cookies.TryGetValue("refresh_token", out var refreshToken)))
-                return BadRequest();
+                return Unauthorized("Invalid token");
 
             var req = new RefreshTokenRequestDTO
             {
-                UserId = userId,
+                AccessToken = accessToken,
                 RefreshToken = refreshToken
             };
             var res = await authService.RefreshTokenAsync(req);
-            if (res is null || res.AccessToken is null || res.RefreshToken is null) return Unauthorized("Invalid refresh token");
+            if (res is null || res.AccessToken is null || res.RefreshToken is null) return Unauthorized("Invalid token");
 
             Response.Cookies.Append("access_token", res.AccessToken, new CookieOptions
             {

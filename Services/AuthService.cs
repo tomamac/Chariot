@@ -107,7 +107,12 @@ namespace Chariot.Services
 
         public async Task<TokenResponseDTO?> RefreshTokenAsync(RefreshTokenRequestDTO req)
         {
-            var user = await ValidateRefreshTokenAsync(req.UserId, req.RefreshToken);
+            var principal = GetPrincipalFromExpiredToken(req.AccessToken);
+            if (principal is null) return null;
+
+            var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var user = await ValidateRefreshTokenAsync(userId, req.RefreshToken);
             if (user is null) return null;
             return await CreateTokenResponse(user);
         }
@@ -122,6 +127,34 @@ namespace Chariot.Services
             }
 
             return user;
+        }
+
+        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = configuration["ISSUER"],
+                ValidateAudience = true,
+                ValidAudience = configuration["AUDIENCE"],
+                ValidateLifetime = false,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(configuration["JWT_SECRET"]!)),
+                ValidateIssuerSigningKey = true,
+            };
+
+            ClaimsPrincipal? principal;
+            try
+            {
+                principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out _);
+            }
+            catch
+            {
+                return null;
+            }
+
+            return principal;
         }
 
         public async Task<User?> RegisterAsync(UserAuthDTO req)
