@@ -41,6 +41,28 @@ namespace Chariot.Hubs
             await Clients.Caller.SendAsync("RoomCreated", chatroom);
         }
 
+        public async Task DeleteRoom(int roomId)
+        {
+            var userId = GetUserId() ?? throw new HubException("Invalid user ID claim");
+            DeleteChatResult result = await chatService.DeleteChatAsync(userId, roomId);
+            switch (result)
+            {
+                case DeleteChatResult.NotFound:
+                    throw new HubException("Room not found");
+                case DeleteChatResult.Forbidden:
+                    throw new HubException("Not allowed");
+                default:
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
+                    await Clients.Group(roomId.ToString()).SendAsync("RoomDeleted", roomId);
+                    break;
+            }
+        }
+
+        public async Task DisconnectFromDeletedRoom(int roomId)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
+        }
+
         public async Task JoinRoom(string roomCode)
         {
             var userId = GetUserId() ?? throw new HubException("Invalid user ID claim");

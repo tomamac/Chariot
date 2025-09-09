@@ -6,6 +6,7 @@ namespace Chariot.Services
     public interface IChatService
     {
         Task<ChatroomInfoDTO?> CreateChatAsync(int userId, string chatName);
+        Task<DeleteChatResult> DeleteChatAsync (int userId, int roomId);
         Task<(JoinChatResult Result, ChatroomInfoDTO? Chatroom)> JoinChatAsync(int userId, string roomCode);
         Task<string?> LeaveChatAsync(int userId, int roomId);
         Task<MessageResponseDTO?> SaveMessageAsync(int userId, int roomId, string content);

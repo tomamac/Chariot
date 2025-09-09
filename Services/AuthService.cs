@@ -105,6 +105,26 @@ namespace Chariot.Services
             return await CreateTokenResponse(user);
         }
 
+        public async Task<bool> LogoutAsync(int userId)
+        {
+            var user = await context.Users.FindAsync(userId);
+            if (user is null) return false;
+
+            switch (user.Role)
+            {
+                case "Guest":
+                    context.Remove(user);
+                    await context.SaveChangesAsync();
+                    break;
+                default:
+                    user.RefreshToken = null;
+                    user.RefreshTokenExp = null;
+                    await context.SaveChangesAsync();
+                    break;
+            }
+            return true;
+        }
+
         public async Task<TokenResponseDTO?> RefreshTokenAsync(RefreshTokenRequestDTO req)
         {
             var principal = GetPrincipalFromExpiredToken(req.AccessToken);

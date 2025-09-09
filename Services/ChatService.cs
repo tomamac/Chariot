@@ -12,6 +12,13 @@ namespace Chariot.Services
         AlreadyJoined
     }
 
+    public enum DeleteChatResult
+    {
+        Success,
+        NotFound,
+        Forbidden
+    }
+
     public class ChatService(ChariotDbContext context) : IChatService
     {
         public async Task<ChatroomInfoDTO?> CreateChatAsync(int userId, string chatName)
@@ -51,15 +58,31 @@ namespace Chariot.Services
             };
         }
 
+        public async Task<DeleteChatResult> DeleteChatAsync(int userId, int roomId) 
+        {
+            var chat = await context.Chatrooms.FindAsync(roomId);
+            if (chat is null)
+                return DeleteChatResult.NotFound;
+
+            var admin = await context.ChatroomsUser
+                .FirstOrDefaultAsync(cu => cu.ChatroomId == roomId && cu.UserId == userId);
+            if (admin is null || !admin.IsAdmin)
+                return DeleteChatResult.Forbidden;
+
+            context.Chatrooms.Remove(chat);
+            await context.SaveChangesAsync();
+            return DeleteChatResult.Success;
+        }
+
         public async Task<(JoinChatResult Result, ChatroomInfoDTO? Chatroom)> JoinChatAsync(int userId, string roomCode)
         {
-            var chatroom = await context.Chatrooms.FirstOrDefaultAsync(c => c.Code == roomCode);
-            if (!await context.Users.AnyAsync(u => u.Id == userId) || chatroom is null)
+            var chat = await context.Chatrooms.FirstOrDefaultAsync(c => c.Code == roomCode);
+            if (!await context.Users.AnyAsync(u => u.Id == userId) || chat is null)
             {
                 return (JoinChatResult.NotFound, null);
             }
 
-            if (await context.ChatroomsUser.AnyAsync(cu => cu.UserId == userId && cu.Chatroom.Code == roomCode))
+            if (await IsUserInChatroomAsync(userId,chat.Id))
             {
                 return (JoinChatResult.AlreadyJoined, null);
             }
@@ -67,17 +90,17 @@ namespace Chariot.Services
             var chatUser = new ChatroomUser
             {
                 UserId = userId,
-                ChatroomId = chatroom.Id,
+                ChatroomId = chat.Id,
                 JoinedAt = DateTime.UtcNow,
                 IsAdmin = false,
             };
 
             context.ChatroomsUser.Add(chatUser);
-            chatroom.LastActivityAt = DateTime.UtcNow;
+            chat.LastActivityAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
 
             return (JoinChatResult.Success, await context.Chatrooms
-                .Where(c => c.Id == chatroom.Id)
+                .Where(c => c.Id == chat.Id)
                 .Select(c => new ChatroomInfoDTO
                 {
                     Id = c.Id,
@@ -124,8 +147,8 @@ namespace Chariot.Services
         public async Task<MessageResponseDTO?> SaveMessageAsync(int userId, int roomId, string content)
         {
             var senderName = await context.Users.Where(u => u.Id == userId).Select(u => u.DisplayName).FirstOrDefaultAsync();
-            var chatroom = await context.Chatrooms.FirstOrDefaultAsync(c => c.Id == roomId);
-            if (senderName is null || chatroom is null || !await IsUserInChatroomAsync(userId, roomId))
+            var chat = await context.Chatrooms.FindAsync(roomId);
+            if (senderName is null || chat is null || !await IsUserInChatroomAsync(userId, roomId))
             {
                 return null;
             }
@@ -139,11 +162,12 @@ namespace Chariot.Services
             };
 
             context.Messages.Add(message);
-            chatroom.LastActivityAt = DateTime.UtcNow;
+            chat.LastActivityAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
 
             return new MessageResponseDTO
             {
+                RoomId = roomId,
                 UserId = userId,
                 Displayname = senderName,
                 Content = content,
@@ -153,8 +177,8 @@ namespace Chariot.Services
 
         public async Task<MessageResponseDTO?> SaveSystemMessageAsync(int roomId, string content)
         {
-            var chatroom = await context.Chatrooms.FirstOrDefaultAsync(c => c.Id == roomId);
-            if (chatroom is null)
+            var chat = await context.Chatrooms.FindAsync(roomId);
+            if (chat is null)
             {
                 return null;
             }
@@ -169,11 +193,12 @@ namespace Chariot.Services
             };
 
             context.Messages.Add(message);
-            chatroom.LastActivityAt = DateTime.UtcNow;
+            chat.LastActivityAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
 
             return new MessageResponseDTO
             {
+                RoomId = roomId,
                 UserId = 0,
                 Displayname = "System",
                 Content = content,
@@ -183,7 +208,7 @@ namespace Chariot.Services
 
         public async Task SetOnlineStatusAsync(int userId, bool isOnline)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await context.Users.FindAsync(userId);
             if (user is null) return;
             user.IsOnline = isOnline;
             await context.SaveChangesAsync();
@@ -255,6 +280,7 @@ namespace Chariot.Services
                 .Where(m => m.ChatroomId == roomId)
                 .Select(m => new MessageResponseDTO
                 {
+                    RoomId = roomId,
                     UserId = m.UserId ?? 0,
                     Displayname = m.IsSystem ? "System" : m.User.DisplayName,
                     Content = m.Content,

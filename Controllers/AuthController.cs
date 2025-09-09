@@ -9,7 +9,7 @@ namespace Chariot.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthService authService) : ControllerBase
+    public class AuthController(IAuthService authService, IChatService chatService) : ControllerBase
     {
         //public static User user = new();
 
@@ -91,6 +91,20 @@ namespace Chariot.Controllers
             return Ok();
         }
 
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            if (!int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                return Unauthorized();
+
+            if (!await authService.LogoutAsync(userId))
+                return NotFound();
+
+            Response.Cookies.Delete("access_token");
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+
         [HttpPost("refresh-token")]
         public async Task<ActionResult<TokenResponseDTO>> RefreshToken()
         {
@@ -121,6 +135,19 @@ namespace Chariot.Controllers
             });
 
             return Ok(res);
+        }
+
+        [HttpGet("me")]
+        public async Task<ActionResult<MyInfoDTO>> GetMe()
+        {
+            if (!int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                return Unauthorized();
+
+            var user = await authService.FetchUserInfoAsync(userId);
+
+            if (user is null) return NotFound();
+
+            return Ok(user);
         }
 
         //"app.use("/api", protectedRoutes);
