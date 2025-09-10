@@ -204,7 +204,7 @@ namespace Chariot.Services
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user is null) return null;
-            return new MyInfoDTO { Username = user.Username, DisplayName = user.DisplayName };
+            return new MyInfoDTO { UserId = userId, Username = user.Username, DisplayName = user.DisplayName };
         }
     }
 }
