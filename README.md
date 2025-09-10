@@ -3,7 +3,9 @@
 Real-time chat backend project using **.NET**, **PostgreSQL**, and **SignalR**.
 **Idea:** Chat + Period = Chariot (also like chatting on a chariot 🙂)
 
-**Demo:** [https://chariot-xcce.onrender.com/api/\[SERVICE\]/\[ENDPOINT\]](https://chariot-xcce.onrender.com/api/[SERVICE]/[ENDPOINT])\
+**Demo:** [https://chariot-xcce.onrender.com/api/\[SERVICE\]/\[ENDPOINT\]](https://chariot-xcce.onrender.com/api/[SERVICE]/[ENDPOINT])
+> Due to render free instance limitation, The demo will spin down with inactivity, which can delay requests by 50 seconds or more.
+
 **Postman collection:** [Download here](https://drive.google.com/file/d/1EaGbFRrR4RRaQ1Zn56F5Ih_qEPifTaYh/view?usp=sharing)
 
 ## 🔧 Installation & Setup
