@@ -1,6 +1,6 @@
 # Chariot
 
-Real-time chat backend project using **.NET**, **PostgreSQL**, and **SignalR**.
+Real-time chat backend project using **.NET**, **PostgreSQL**, and **SignalR**.\
 **Idea:** Chat + Period = Chariot (also like chatting on a chariot 🙂)
 
 **Demo:** [https://chariot-xcce.onrender.com/api/\[SERVICE\]/\[ENDPOINT\]](https://chariot-xcce.onrender.com/api/[SERVICE]/[ENDPOINT])
