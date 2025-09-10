@@ -9,7 +9,7 @@ namespace Chariot.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthService authService, IChatService chatService) : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
         //public static User user = new();
 
@@ -150,7 +150,6 @@ namespace Chariot.Controllers
             return Ok(user);
         }
 
-        //"app.use("/api", protectedRoutes);
         [Authorize]
         [HttpGet]
         public IActionResult ProtectedRoute()
